@@ -1,7 +1,7 @@
 /* global AutoForm, Template */
-
 import noUiSlider from 'nouislider'
 import 'nouislider/distribute/nouislider.css'
+import './autoform-nouislider.css'
 import './autoform-nouislider.html'
 
 AutoForm.addInputType('noUiSlider', {

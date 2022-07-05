@@ -7,6 +7,32 @@ muqube:autoform-nouislider
 
 `meteor add muqube:autoform-nouislider`
 
+There are two ways to import the package: dynamic and static. 
+The default way is dynamic, where you import a function, containing a dynamic import.
+This prevents this package from being added to the initial client bundle and allows
+you to import it only at that point when it's really required.
+
+```js
+import loadAfNoUiSlider from 'meteor/muqube:autoform-nouislider'
+
+// This is only an example of how to reactively track
+// if the extension has been loaded.
+// You can, of course, track it anyway you want!
+Template.myTemplate.onCreated(async function () {
+  const instance = this
+  instance.state = new ReactiveDict()
+  await loadAfNoUiSlider.default()
+  instance.state.set('afNoUiSliderLoaded', true)
+})
+```
+
+If you really need this package being added to the initial bundle, thus being present at
+startup time, then you should use the static import:
+
+```javascript
+import 'meteor/muqube:autoform-nouislider/static'
+```
+
 ## Configuration
 Adds the `noUiSlider` type to [autoform](https://github.com/aldeed/meteor-autoform). It uses `min`, `max`, and `step` attributes like a normal slider, so it can be a drop in replacement, but options passed as `noUiSliderOptions` are passed directly to [nouislider](http://refreshless.com/nouislider/) for advanced control.
 
