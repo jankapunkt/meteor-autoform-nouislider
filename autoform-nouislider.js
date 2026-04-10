@@ -1,130 +1,175 @@
-/* global AutoForm, _, Template */
+/* global AutoForm, Template */
+import noUiSlider from 'nouislider'
+import 'nouislider/dist/nouislider.css'
+import './autoform-nouislider.css'
+import './autoform-nouislider.html'
 
-import noUiSlider from 'nouislider';
-import 'nouislider/src/nouislider.css';
-import 'nouislider/src/nouislider.pips.css';
-import 'nouislider/src/nouislider.tooltips.css';
+AutoForm.addInputType('noUiSlider', {
+  template: 'afNoUiSlider',
+  valueOut: function () {
+    const slider = this.find('.nouislider')[ 0 ]
+    const sliderData = slider.noUiSlider.get()
 
-AutoForm.addInputType("noUiSlider", {
-  template: "afNoUiSlider",
-  valueOut: function(){
-    var slider = this.find('.nouislider')[0];
-    var isDecimal = this.closest(".at-nouislider").data("decimal");
-
-    if( this.attr("data-type") === "Object" ){
-      var parser = (isDecimal)? parseFloat : parseInt;
-      var first = parser.call(null, slider.noUiSlider.get()[0]);
-      var second = parser.call(null, slider.noUiSlider.get()[1]);
-      var value = {
+    if (this.attr('data-type') === 'Object') {
+      const isDecimal = this.closest('.at-nouislider').data('decimal')
+      const parser = (isDecimal) ? parseFloat : parseInt
+      const first = parser.call(null, sliderData[ 0 ])
+      const second = parser.call(null, sliderData[ 1 ])
+      return {
         lower: first > second ? second : first,
         upper: first > second ? first : second
-      };
-      return value;
-    }else{
-      return slider.noUiSlider.get();
+      }
+    } else {
+      return sliderData
     }
   }
-});
+})
+
+const omit = (object, ...keys) => {
+  const copy = Object.assign({}, object)
+  keys.forEach(key => {
+    delete copy[key]
+  })
+  return copy
+}
+
+const pick = (object, ...keys) => {
+  const tmp = {}
+  keys.forEach(key => {
+    tmp[key] = object[key]
+  })
+  return tmp
+}
+
+const exists = x => typeof x !== 'undefined' && x !== null
+
+const merge = (...objects) => {
+  const tmp = {}
+  objects.forEach(object => {
+    object && Object.keys(object).forEach(key => {
+      const value = object[key]
+      if (exists(value)) {
+        tmp[key] = value
+      }
+    })
+  })
+  return tmp
+}
 
 Template.afNoUiSlider.helpers({
   atts: function () {
-    var data = Template.currentData(); // get data reactively
-    var atts = data.atts;
-    atts["data-type"] = data.schemaType.name;
-    if( atts["class"] ){
-      atts["class"] += " at-nouislider";
-    }else{
-      atts["class"] = "at-nouislider";
+    const data = Template.currentData() // get data reactively
+    const atts = Object.assign({}, data.atts)
+    atts[ 'data-type' ] = data.schemaType.name || 'Object' // fallback if type is a Schema and name becomes undefined
+    if (atts[ 'class' ]) {
+      atts[ 'class' ] += ' at-nouislider'
+    } else {
+      atts[ 'class' ] = 'at-nouislider'
     }
 
-    atts.doLabels = ( atts.labelLeft || atts.labelRight );
+    atts.doLabels = (atts.labelLeft || atts.labelRight)
+    atts[ 'data-decimal' ] = data.decimal
 
-    atts["data-decimal"] = data.decimal;
-
-    return _.omit(atts, 'noUiSliderOptions', 'noUiSlider_pipsOptions');
+    return omit(atts, 'noUiSliderOptions', 'noUiSlider_pipsOptions')
+  },
+  disabled: function () {
+    const data = Template.currentData() // get data reactively
+    return 'disabled' in data.atts
+      ? { disabled: '' }
+      : {}
   }
-});
+})
 
-var calculateOptions = function(data){
-  var schemaMinMax = _.pick(data, 'max', 'min');
-  var autoformOptions = _.pick(data.atts || {}, 'max', 'min', 'step', 'start', 'range');
-  var noUiSliderOptions = (data.atts || {}).noUiSliderOptions;
-
-  var options = _.extend({}, schemaMinMax, autoformOptions, noUiSliderOptions);
+const calculateOptions = function (data) {
+  const schemaMinMax = pick(data, 'max', 'min')
+  const autoformOptions = pick(data.atts || {}, 'max', 'min', 'step', 'start', 'range')
+  const noUiSliderOptions = (data.atts || {}).noUiSliderOptions
+  const options = merge(schemaMinMax, autoformOptions, noUiSliderOptions)
 
   // Adjust data initialization based on schema type
-  if( options.start === undefined ){
-    if( data.schemaType.name === "Object" ){
-      if( data.value && data.value.lower ){
+  if (!options.start) {
+    if (data.schemaType.name === 'Object') {
+      if (data.value && data.value.lower) {
         options.start = [
           data.value.lower,
           data.value.upper
-        ];
-      }else{
+        ]
+      } else {
         options.start = [
-          typeof data.min === "number" ? data.min : 0,
-          typeof data.max === "number" ? data.max : 100
-        ];
+          typeof data.min === 'number' ? data.min : 0,
+          typeof data.max === 'number' ? data.max : 100
+        ]
       }
-      options.connect = true;
-    }else{
-      options.start = data.value || 0;
+      options.connect = true
+    } else {
+      options.start = data.value || 0
     }
   }
 
-  if( options.range === undefined ){
+  if (options.range === undefined) {
     options.range = {
-      min: typeof options.min === "number" ? options.min : 0,
-      max: typeof options.max === "number" ? options.max : 100
-    };
+      min: typeof options.min === 'number' ? options.min : 0,
+      max: typeof options.max === 'number' ? options.max : 100
+    }
   }
 
-  delete options.min;
-  delete options.max;
+  delete options.min
+  delete options.max
 
   // default step to 1 if not otherwise defined
-  if( options.step === undefined ){
-    options.step = 1;
+  if (options.step === undefined) {
+    options.step = 1
   }
 
-  return options;
-};
+  return options
+}
 
 Template.afNoUiSlider.rendered = function () {
-  var template = this;
-  var $s = template.$('.nouislider');
+  const template = this
+  const $s = template.$('.nouislider')
 
-  var setup = function(c){
-    var data = Template.currentData(); // get data reactively
-    var options = calculateOptions( data );
-    var sliderElem = $s[0];
+  let nonReactiveValue
 
-    if(sliderElem.noUiSlider) {
-      sliderElem.noUiSlider.updateOptions(options, true);
+  const setup = function (c) {
+    const data = Template.currentData() // get data reactively
+    const options = calculateOptions(data)
+    const sliderElem = $s[ 0 ]
+
+    // if   we have a new computation and
+    //      we have a given value (for example by editing a saved document) and
+    //      we have already changed the value
+    // then we will use the changed value instead of the initial value
+    // to avoid a potential "jumping" effect when saving the form
+    if (typeof data.value !== 'undefined' && typeof nonReactiveValue !== 'undefined') {
+      options.start = nonReactiveValue
     }
-    else {
-      noUiSlider.create(sliderElem, options);
+
+    if (sliderElem.noUiSlider) {
+      sliderElem.noUiSlider.updateOptions(options, true)
+    } else {
+      noUiSlider.create(sliderElem, options)
     }
 
     if (c.firstRun) {
-      sliderElem.noUiSlider.on('slide', function(){
+      sliderElem.noUiSlider.on('slide', function () {
         // This is a trick to fool some logic in AutoForm that makes
         // sure values have actually changed on whichever element
         // emits a change event. Eventually AutoForm will give
         // input types the control of indicating exactly when
         // their value changes rather than relying on the change event
-        $s.parent()[0].value = JSON.stringify(sliderElem.noUiSlider.get());
-        $s.parent().change();
-        $s.data('changed','true');
-      });
+        nonReactiveValue = sliderElem.noUiSlider.get()
+        $s.parent()[ 0 ].value = JSON.stringify(nonReactiveValue)
+        $s.parent().change()
+        $s.data('changed', 'true')
+      })
     }
 
-    if( data.atts.noUiSlider_pipsOptions ){
+    if (data.atts.noUiSlider_pipsOptions) {
       sliderElem.noUiSlider.pips(
-          data.atts.noUiSlider_pipsOptions
-      );
+        data.atts.noUiSlider_pipsOptions
+      )
     }
-  };
+  }
 
-  template.autorun( setup );
-};
+  template.autorun(setup)
+}
