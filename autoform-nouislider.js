@@ -1,6 +1,6 @@
 /* global AutoForm, Template */
 import noUiSlider from 'nouislider'
-import 'nouislider/distribute/nouislider.css'
+import 'nouislider/dist/nouislider.css'
 import './autoform-nouislider.css'
 import './autoform-nouislider.html'
 
@@ -71,6 +71,12 @@ Template.afNoUiSlider.helpers({
     atts[ 'data-decimal' ] = data.decimal
 
     return omit(atts, 'noUiSliderOptions', 'noUiSlider_pipsOptions')
+  },
+  disabled: function () {
+    const data = Template.currentData() // get data reactively
+    return 'disabled' in data.atts
+      ? { disabled: '' }
+      : {}
   }
 })
 
